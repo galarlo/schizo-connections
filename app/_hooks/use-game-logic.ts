@@ -95,6 +95,11 @@ export default function useGameLogic() {
 
     // If there are no categories (random board), use random outcome
     if (categories.length === 0) {
+      // Decrement mistakesRemaining for every guess attempt (except 'same')
+      setMistakesRemaning(mistakesRemaining - 1);
+      if (mistakesRemaining === 1) {
+        return { result: "loss" };
+      }
       const rand = Math.random();
       if (rand < 1/3) {
         // 33% nothing happens
