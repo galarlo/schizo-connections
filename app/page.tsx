@@ -28,11 +28,17 @@ export default function Home() {
     getSubmitResult,
     handleWin,
     handleLoss,
+    revealBoardType,
+    userBoardTypeGuess,
+    actualBoardType,
+    revealBoardTypeHandler,
   } = useGameLogic();
 
   const [showGameWonModal, setShowGameWonModal] = useState(false);
   const [showGameLostModal, setShowGameLostModal] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [showBoardTypePrompt, setShowBoardTypePrompt] = useState(false);
+  const [showBoardTypeResult, setShowBoardTypeResult] = useState(false);
 
   const {
     guessAnimationState,
@@ -40,6 +46,11 @@ export default function Home() {
     animateGuess,
     animateWrongGuess,
   } = useAnimation();
+
+  // Show board type prompt when game ends
+  if ((isWon || isLost) && !revealBoardType && !showBoardTypePrompt) {
+    setShowBoardTypePrompt(true);
+  }
 
   const handleSubmit = async () => {
     setSubmitted(true);
@@ -96,6 +107,7 @@ export default function Home() {
           setShowGameLostModal(true);
         }}
       />
+
     );
 
     const inProgressButtons = (
@@ -127,6 +139,67 @@ export default function Home() {
     }
   };
 
+  // Board type guessing prompt and reveal
+  const renderBoardTypePrompt = () => {
+    if (!showBoardTypePrompt || revealBoardType) return null;
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="bg-white p-8 rounded shadow-lg flex flex-col items-center">
+          <h2 className="text-lg font-bold mb-4">
+            Was this a regular board or a random board?
+          </h2>
+          <div className="flex gap-4">
+            <button
+              className="bg-blue-500 text-white px-4 py-2 rounded"
+              onClick={() => {
+                revealBoardTypeHandler("regular");
+                setShowBoardTypePrompt(false);
+                setShowBoardTypeResult(true);
+              }}
+            >
+              Regular
+            </button>
+            <button
+              className="bg-purple-500 text-white px-4 py-2 rounded"
+              onClick={() => {
+                revealBoardTypeHandler("random");
+                setShowBoardTypePrompt(false);
+                setShowBoardTypeResult(true);
+              }}
+            >
+              Random
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderBoardTypeResult = () => {
+    if (!showBoardTypeResult || !revealBoardType) return null;
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="bg-white p-8 rounded shadow-lg flex flex-col items-center">
+          <h2 className="text-lg font-bold mb-4">
+            The answer was:{" "}
+            <span className="font-mono">{actualBoardType?.toUpperCase()}</span>
+          </h2>
+          {userBoardTypeGuess === actualBoardType ? (
+            <p className="text-green-600 font-semibold">You guessed correctly!</p>
+          ) : (
+            <p className="text-red-600 font-semibold">You guessed wrong.</p>
+          )}
+          <button
+            className="mt-6 bg-gray-700 text-white px-4 py-2 rounded"
+            onClick={() => setShowBoardTypeResult(false)}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="flex flex-col items-center w-11/12 md:w-3/4 lg:w-7/12 mx-auto mt-14">
@@ -152,6 +225,8 @@ export default function Home() {
         </h2>
         {renderControlButtons()}
       </div>
+      {renderBoardTypePrompt()}
+      {renderBoardTypeResult()}
       <GameWonModal
         isOpen={showGameWonModal}
         onClose={() => setShowGameWonModal(false)}

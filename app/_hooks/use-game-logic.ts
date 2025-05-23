@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { loadRandomSchizoBoard } from "../_puzzle-loader";
 import { Category, SchizoBoard, SubmitResult, Word } from "../_types";
 import { delay, shuffleArray } from "../_utils";
 
@@ -7,6 +6,7 @@ export default function useGameLogic() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [gameWords, setGameWords] = useState<Word[]>([]);
   const [boardLoaded, setBoardLoaded] = useState(false);
+  const [schizoBoard, setSchizoBoard] = useState<SchizoBoard | null>(null);
   const selectedWords = useMemo(
     () => gameWords.filter((item: Word) => item.selected),
     [gameWords]
@@ -17,25 +17,41 @@ export default function useGameLogic() {
   const [mistakesRemaining, setMistakesRemaning] = useState(4);
   const guessHistoryRef = useRef<Word[][]>([]);
 
+  // Add state to track if the board type should be revealed
+  const [revealBoardType, setRevealBoardType] = useState(false);
+  // Add state to track user's guess ("regular" or "random")
+  const [userBoardTypeGuess, setUserBoardTypeGuess] = useState<"regular" | "random" | null>(null);
+
+  // Only call loadRandomSchizoBoard ONCE per game session
   useEffect(() => {
-    // Only call the loader once per game session
-    loadRandomSchizoBoard().then((board: SchizoBoard) => {
-      if (board.type === "regular") {
-        setCategories(board.categories);
-        const words: Word[] = board.categories
-          .map((category: Category) =>
-            category.items.map((word: string) => ({ word: word, level: category.level }))
-          )
-          .flat();
-        setGameWords(shuffleArray(words));
-      } else {
-        setCategories([]); // No categories for random board
-        const words: Word[] = board.words.map((word: string) => ({ word, level: 1 }));
-        setGameWords(shuffleArray(words));
+    let cancelled = false;
+    (async () => {
+      if (!schizoBoard) {
+        const board = await import("../_puzzle-loader").then(m => m.loadRandomSchizoBoard());
+        if (!cancelled) setSchizoBoard(board);
       }
-      setBoardLoaded(true);
-    });
+    })();
+    return () => { cancelled = true; };
   }, []);
+
+  // Set up categories and gameWords when schizoBoard is loaded
+  useEffect(() => {
+    if (!schizoBoard) return;
+    if (schizoBoard.type === "regular") {
+      setCategories(schizoBoard.categories);
+      const words: Word[] = schizoBoard.categories
+        .map((category: Category) =>
+          category.items.map((word: string) => ({ word: word, level: category.level }))
+        )
+        .flat();
+      setGameWords(shuffleArray(words));
+    } else {
+      setCategories([]); // No categories for random board
+      const words: Word[] = schizoBoard.words.map((word: string) => ({ word, level: 1 }));
+      setGameWords(shuffleArray(words));
+    }
+    setBoardLoaded(true);
+  }, [schizoBoard]);
 
   const selectWord = (word: Word): void => {
     const newGameWords = gameWords.map((item: Word) => {
@@ -76,6 +92,34 @@ export default function useGameLogic() {
     }
 
     guessHistoryRef.current.push(selectedWords);
+
+    // If there are no categories (random board), use random outcome
+    if (categories.length === 0) {
+      const rand = Math.random();
+      if (rand < 1/3) {
+        // 33% nothing happens
+        return { result: "incorrect" };
+      } else if (rand < 2/3) {
+        // 33% one-away
+        return { result: "one-away" };
+      } else {
+        // 33% treat as correct category (remove words, show hidden bar)
+        // Simulate a hidden category for UI
+        // Ensure unique key for each hidden category
+        const hiddenCategory = {
+          category: `?${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          items: selectedWords.map(w => w.word),
+          level: (clearedCategories.length + 1) as 1 | 2 | 3 | 4,
+        };
+        setClearedCategories([...clearedCategories, hiddenCategory]);
+        setGameWords(gameWords.filter((item: Word) => !selectedWords.some(w => w.word === item.word)));
+        if (clearedCategories.length === 3) {
+          return { result: "win" };
+        } else {
+          return { result: "correct" };
+        }
+      }
+    }
 
     const likenessCounts = categories.map((category: Category) => {
       return selectedWords.filter((item: Word) => category.items.includes(item.word))
@@ -144,10 +188,38 @@ export default function useGameLogic() {
     setIsWon(true);
   };
 
+  // Helper to get the display categories (hide names unless revealed)
+  const getDisplayCategories = () => {
+    if (revealBoardType && schizoBoard?.type === "regular") {
+      // Reveal real category names
+      return clearedCategories;
+    } else {
+      // Hide all category names (set to '?<unique>')
+      return clearedCategories.map((cat, idx) => ({
+        ...cat,
+        category: `?${cat.category ? `-${cat.category}` : ''}-${idx}`,
+      }));
+    }
+  };
+
+  // When the game is won or lost, prompt the user to guess board type
+  useEffect(() => {
+    if ((isWon || isLost) && !revealBoardType) {
+      // Show prompt to user (handled in UI)
+      // After user guesses, call revealBoardTypeHandler
+    }
+  }, [isWon, isLost, revealBoardType]);
+
+  // Handler to be called from UI when user makes their guess
+  const revealBoardTypeHandler = (guess: "regular" | "random") => {
+    setUserBoardTypeGuess(guess);
+    setRevealBoardType(true);
+  };
+
   return {
     gameWords,
     selectedWords,
-    clearedCategories,
+    clearedCategories: getDisplayCategories(),
     mistakesRemaining,
     isWon,
     isLost,
@@ -158,5 +230,9 @@ export default function useGameLogic() {
     getSubmitResult,
     handleLoss,
     handleWin,
+    revealBoardType, // for UI
+    userBoardTypeGuess, // for UI
+    actualBoardType: schizoBoard?.type, // for UI
+    revealBoardTypeHandler, // for UI
   };
 }

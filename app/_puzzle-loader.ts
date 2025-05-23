@@ -30,14 +30,14 @@ async function loadRandomWords(): Promise<string[]> {
 // Loads a random board: 50% chance regular, 50% chance random
 export async function loadRandomSchizoBoard(): Promise<SchizoBoard> {
   if (Math.random() < 0.5) {
-    console.log("Loading regular board1");
+    console.log("Loading regular board2");
     // Regular board
     const puzzles = await loadAllPuzzles();
     const randomPuzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
     return { type: "regular", categories: convertJsonPuzzleToCategories(randomPuzzle) };
   } else {
     // Random board
-    console.log("Loading random board1");
+    console.log("Loading random board2");
     const words = await loadRandomWords();
     return { type: "random", words };
   }
