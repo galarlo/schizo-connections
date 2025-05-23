@@ -95,6 +95,17 @@ export default function useGameLogic() {
 
     // If there are no categories (random board), use random outcome
     if (categories.length === 0) {
+      // If only 4 words remain, always treat as correct
+      if (gameWords.length === 4) {
+        const hiddenCategory = {
+          category: `?${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          items: selectedWords.map(w => w.word),
+          level: (clearedCategories.length + 1) as 1 | 2 | 3 | 4,
+        };
+        setClearedCategories([...clearedCategories, hiddenCategory]);
+        setGameWords([]);
+        return { result: "win" };
+      }
       // Decrement mistakesRemaining for every guess attempt (except 'same')
       setMistakesRemaning(mistakesRemaining - 1);
       if (mistakesRemaining === 1) {
@@ -109,8 +120,6 @@ export default function useGameLogic() {
         return { result: "one-away" };
       } else {
         // 33% treat as correct category (remove words, show hidden bar)
-        // Simulate a hidden category for UI
-        // Ensure unique key for each hidden category
         const hiddenCategory = {
           category: `?${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           items: selectedWords.map(w => w.word),

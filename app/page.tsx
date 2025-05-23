@@ -3,8 +3,6 @@
 import { useCallback, useState } from "react";
 import ControlButton from "./_components/button/control-button";
 import Grid from "./_components/game/grid";
-import GameLostModal from "./_components/modal/game-lost-modal";
-import GameWonModal from "./_components/modal/game-won-modal";
 import Popup from "./_components/popup";
 import useAnimation from "./_hooks/use-animation";
 import useGameLogic from "./_hooks/use-game-logic";
@@ -227,17 +225,6 @@ export default function Home() {
       </div>
       {renderBoardTypePrompt()}
       {renderBoardTypeResult()}
-      <GameWonModal
-        isOpen={showGameWonModal}
-        onClose={() => setShowGameWonModal(false)}
-        guessHistory={guessHistoryRef.current}
-        perfection={getPerfection(mistakesRemaining)}
-      />
-      <GameLostModal
-        isOpen={showGameLostModal}
-        onClose={() => setShowGameLostModal(false)}
-        guessHistory={guessHistoryRef.current}
-      />
     </>
   );
 }
