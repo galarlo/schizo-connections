@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { categories } from "../_examples";
+import { loadRandomCategories } from "../_puzzle-loader";
 import { Category, SubmitResult, Word } from "../_types";
 import { delay, shuffleArray } from "../_utils";
 
 export default function useGameLogic() {
+  const [categories, setCategories] = useState<Category[]>([]);
   const [gameWords, setGameWords] = useState<Word[]>([]);
   const selectedWords = useMemo(
-    () => gameWords.filter((item) => item.selected),
+    () => gameWords.filter((item: Word) => item.selected),
     [gameWords]
   );
   const [clearedCategories, setClearedCategories] = useState<Category[]>([]);
@@ -16,16 +17,19 @@ export default function useGameLogic() {
   const guessHistoryRef = useRef<Word[][]>([]);
 
   useEffect(() => {
-    const words: Word[] = categories
-      .map((category) =>
-        category.items.map((word) => ({ word: word, level: category.level }))
-      )
-      .flat();
-    setGameWords(shuffleArray(words));
+    loadRandomCategories().then((cats: Category[]) => {
+      setCategories(cats);
+      const words: Word[] = cats
+        .map((category: Category) =>
+          category.items.map((word: string) => ({ word: word, level: category.level }))
+        )
+        .flat();
+      setGameWords(shuffleArray(words));
+    });
   }, []);
 
   const selectWord = (word: Word): void => {
-    const newGameWords = gameWords.map((item) => {
+    const newGameWords = gameWords.map((item: Word) => {
       // Only allow word to be selected if there are less than 4 selected words
       if (word.word === item.word) {
         return {
@@ -46,15 +50,15 @@ export default function useGameLogic() {
 
   const deselectAllWords = () => {
     setGameWords(
-      gameWords.map((item) => {
+      gameWords.map((item: Word) => {
         return { ...item, selected: false };
       })
     );
   };
 
   const getSubmitResult = (): SubmitResult => {
-    const sameGuess = guessHistoryRef.current.some((guess) =>
-      guess.every((word) => selectedWords.includes(word))
+    const sameGuess = guessHistoryRef.current.some((guess: Word[]) =>
+      guess.every((word: Word) => selectedWords.includes(word))
     );
 
     if (sameGuess) {
@@ -64,8 +68,8 @@ export default function useGameLogic() {
 
     guessHistoryRef.current.push(selectedWords);
 
-    const likenessCounts = categories.map((category) => {
-      return selectedWords.filter((item) => category.items.includes(item.word))
+    const likenessCounts = categories.map((category: Category) => {
+      return selectedWords.filter((item: Word) => category.items.includes(item.word))
         .length;
     });
 
@@ -82,7 +86,7 @@ export default function useGameLogic() {
   const getCorrectResult = (category: Category): SubmitResult => {
     setClearedCategories([...clearedCategories, category]);
     setGameWords(
-      gameWords.filter((item) => !category.items.includes(item.word))
+      gameWords.filter((item: Word) => !category.items.includes(item.word))
     );
 
     if (clearedCategories.length === 3) {
@@ -106,19 +110,19 @@ export default function useGameLogic() {
 
   const handleLoss = async () => {
     const remainingCategories = categories.filter(
-      (category) => !clearedCategories.includes(category)
+      (category: Category) => !clearedCategories.includes(category)
     );
 
     deselectAllWords();
 
     for (const category of remainingCategories) {
       await delay(1000);
-      setClearedCategories((prevClearedCategories) => [
+      setClearedCategories((prevClearedCategories: Category[]) => [
         ...prevClearedCategories,
         category,
       ]);
-      setGameWords((prevGameWords) =>
-        prevGameWords.filter((item) => !category.items.includes(item.word))
+      setGameWords((prevGameWords: Word[]) =>
+        prevGameWords.filter((item: Word) => !category.items.includes(item.word))
       );
     }
 
