@@ -202,10 +202,11 @@ export default function Home() {
     <>
       <div className="flex flex-col items-center w-11/12 md:w-3/4 lg:w-7/12 mx-auto mt-14">
         <h1 className="text-black text-4xl font-semibold my-4 ml-4">
-          Connections
+          Schizophrenic Connections
         </h1>
         <hr className="mb-4 md:mb-4 w-full"></hr>
         <h1 className="text-black mb-4">Create four groups of four!</h1>
+        <h1 className="text-black mb-4">But wait... are these words a real Connections boards, or are these just random words, and you imagined the connections?</h1>
         <div className="relative w-full">
           <Popup show={popupState.show} message={popupState.message} />
           <Grid

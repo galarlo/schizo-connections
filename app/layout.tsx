@@ -6,7 +6,7 @@ import { Analytics } from '@vercel/analytics/next';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Connections",
+  title: "Schizophrenic Connections",
   description: "Group four groups of four!",
 };
 
