@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { loadRandomCategories } from "../_puzzle-loader";
-import { Category, SubmitResult, Word } from "../_types";
+import { loadRandomSchizoBoard } from "../_puzzle-loader";
+import { Category, SchizoBoard, SubmitResult, Word } from "../_types";
 import { delay, shuffleArray } from "../_utils";
 
 export default function useGameLogic() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [gameWords, setGameWords] = useState<Word[]>([]);
+  const [boardLoaded, setBoardLoaded] = useState(false);
   const selectedWords = useMemo(
     () => gameWords.filter((item: Word) => item.selected),
     [gameWords]
@@ -17,14 +18,22 @@ export default function useGameLogic() {
   const guessHistoryRef = useRef<Word[][]>([]);
 
   useEffect(() => {
-    loadRandomCategories().then((cats: Category[]) => {
-      setCategories(cats);
-      const words: Word[] = cats
-        .map((category: Category) =>
-          category.items.map((word: string) => ({ word: word, level: category.level }))
-        )
-        .flat();
-      setGameWords(shuffleArray(words));
+    // Only call the loader once per game session
+    loadRandomSchizoBoard().then((board: SchizoBoard) => {
+      if (board.type === "regular") {
+        setCategories(board.categories);
+        const words: Word[] = board.categories
+          .map((category: Category) =>
+            category.items.map((word: string) => ({ word: word, level: category.level }))
+          )
+          .flat();
+        setGameWords(shuffleArray(words));
+      } else {
+        setCategories([]); // No categories for random board
+        const words: Word[] = board.words.map((word: string) => ({ word, level: 1 }));
+        setGameWords(shuffleArray(words));
+      }
+      setBoardLoaded(true);
     });
   }, []);
 

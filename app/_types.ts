@@ -26,3 +26,8 @@ export type CellAnimationState = {
   show: boolean;
   index: number;
 };
+
+// Represents a board that can be either a regular (with categories) or random (just words)
+export type SchizoBoard =
+  | { type: "regular"; categories: Category[] }
+  | { type: "random"; words: string[] };
